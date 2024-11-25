@@ -9,6 +9,8 @@ import (
 	tokensvc "github.com/haukened/tsky/internal/tokenSvc"
 )
 
+var Version string = "N/A"
+
 func dontPanic(err error) {
 	if err != nil {
 		fmt.Printf("error: %s\n", err)
@@ -28,5 +30,5 @@ func main() {
 	c.RefreshJwt = tsvc.RefreshToken()
 	err = c.Save()
 	dontPanic(err)
-	fmt.Println("Done")
+	fmt.Println(Version)
 }
