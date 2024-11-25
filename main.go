@@ -2,23 +2,31 @@ package main
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/haukened/tsky/internal/auth"
 	"github.com/haukened/tsky/internal/config"
+	tokensvc "github.com/haukened/tsky/internal/tokenSvc"
 )
+
+func dontPanic(err error) {
+	if err != nil {
+		fmt.Printf("error: %s\n", err)
+		os.Exit(1)
+	}
+}
 
 func main() {
 	c, err := config.New("~/.config/tsky/config.yaml")
-	if err != nil {
-		panic(err)
-	}
+	dontPanic(err)
 	err = c.Load()
-	if err != nil {
-		panic(err)
-	}
+	dontPanic(err)
 	err = auth.AuthUser(c)
-	if err != nil {
-		panic(err)
-	}
+	dontPanic(err)
+	tsvc, err := tokensvc.NewRefresher(c.Server, c.RefreshJwt)
+	dontPanic(err)
+	c.RefreshJwt = tsvc.RefreshToken()
+	err = c.Save()
+	dontPanic(err)
 	fmt.Println("Done")
 }

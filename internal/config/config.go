@@ -17,12 +17,12 @@ import (
 var k = koanf.New(".")
 
 type Config struct {
-	Path         string `koanf:"-" yaml:"-"`
-	Username     string `koanf:"username" yaml:"username"`
-	AppPassword  string `koanf:"app_password" yaml:"app_password"`
-	Server       string `koanf:"server,omitempty" yaml:"server,omitempty"`
-	RefreshToken string `koanf:"refresh_token,omitempty" yaml:"refresh_token,omitempty"`
-	UserAgent    string `koanf:"user_agent,omitempty" yaml:"user_agent,omitempty"`
+	Identifier  string `koanf:"identifier" yaml:"identifier"`
+	RefreshJwt  string `koanf:"refresh_jwt" yaml:"refresh_jwt"`
+	AccessJwt   string `koanf:"-" yaml:"-"` // do not marshal this field
+	AppPassword string `koanf:"-" yaml:"-"` // do not marshal this field
+	Path        string `koanf:"-" yaml:"-"` // do not marshal this field
+	Server      string `koanf:"server,omitempty" yaml:"server,omitempty"`
 }
 
 func New(path string) (*Config, error) {
@@ -98,10 +98,6 @@ func (c *Config) Load() error {
 	// set the default server if it is not set
 	if c.Server == "" {
 		c.Server = "bsky.social"
-	}
-	// set the default user agent if it is not set
-	if c.UserAgent == "" {
-		c.UserAgent = "tsky"
 	}
 
 	return nil
