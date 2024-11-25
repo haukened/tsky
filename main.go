@@ -9,7 +9,7 @@ import (
 	tokensvc "github.com/haukened/tsky/internal/tokenSvc"
 )
 
-var Version string = "N/A"
+var Version string = "dev"
 
 func dontPanic(err error) {
 	if err != nil {
