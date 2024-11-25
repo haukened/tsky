@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	tokensvc "github.com/haukened/tsky/internal/tokenSvc"
+	"github.com/haukened/tsky/internal/tokensvc"
 	"github.com/haukened/tsky/internal/utils"
 )
 

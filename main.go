@@ -6,7 +6,7 @@ import (
 
 	"github.com/haukened/tsky/internal/auth"
 	"github.com/haukened/tsky/internal/config"
-	tokensvc "github.com/haukened/tsky/internal/tokenSvc"
+	"github.com/haukened/tsky/internal/tokensvc"
 	"github.com/haukened/tsky/internal/utils"
 )
 
