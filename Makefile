@@ -9,6 +9,6 @@ build:
 	go build -ldflags "$(LDFLAGS)" -o "$(BINARY_NAME)"
 
 clean:
-	rm -f myapp
+	rm -f "$(BINARY_NAME)"
 
 .PHONY: all build clean

@@ -65,7 +65,7 @@ func (r *Refresher) Refresh() error {
 		return err
 	}
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", r.refreshToken))
-	req.Header.Set("User-Agent", "tSky")
+	req.Header.Set("User-Agent", utils.UserAgent())
 	req.Header.Set("Content-Type", "application/json")
 	client := http.Client{}
 	resp, err := client.Do(req)

@@ -11,6 +11,7 @@ import (
 
 	"github.com/charmbracelet/huh"
 	"github.com/haukened/tsky/internal/config"
+	"github.com/haukened/tsky/internal/utils"
 )
 
 var (
@@ -20,6 +21,7 @@ var (
 	ErrInvalidPassword      = errors.New("invalid password, please use an app password not your primary account password")
 	ErrEmailDomainNotExist  = errors.New("email domain does not exist")
 	ErrDisallowedTLD        = errors.New("disallowed TLD")
+	ErrHttpClient           = errors.New("http client error")
 )
 
 var disallowedTLDs = []string{
@@ -155,7 +157,13 @@ func resolveHandle(handle string) error {
 	}
 	// then check the HTTPS /.well-known/atproto-did file
 	httpsLocation := fmt.Sprintf("https://%s/.well-known/atproto-did", handle)
-	resp, err := http.Get(httpsLocation)
+	client := http.Client{}
+	req, err := http.NewRequest(http.MethodGet, httpsLocation, nil)
+	if err != nil {
+		return ErrHttpClient
+	}
+	req.Header.Set("User-Agent", utils.UserAgent())
+	resp, err := client.Do(req)
 	if err != nil {
 		return ErrHandleDoesNotResolve
 	}

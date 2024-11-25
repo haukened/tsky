@@ -68,7 +68,7 @@ func passwordAuth(c *config.Config) error {
 		return err
 	}
 	req.Header.Add("Content-Type", "application/json")
-	req.Header.Set("User-Agent", "tSky")
+	req.Header.Set("User-Agent", utils.UserAgent())
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {

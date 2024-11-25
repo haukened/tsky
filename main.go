@@ -7,6 +7,7 @@ import (
 	"github.com/haukened/tsky/internal/auth"
 	"github.com/haukened/tsky/internal/config"
 	tokensvc "github.com/haukened/tsky/internal/tokenSvc"
+	"github.com/haukened/tsky/internal/utils"
 )
 
 var Version string = "dev"
@@ -19,6 +20,7 @@ func dontPanic(err error) {
 }
 
 func main() {
+	utils.SetVersion(Version)
 	c, err := config.New("~/.config/tsky/config.yaml")
 	dontPanic(err)
 	err = c.Load()
@@ -30,5 +32,5 @@ func main() {
 	c.RefreshJwt = tsvc.RefreshToken()
 	err = c.Save()
 	dontPanic(err)
-	fmt.Println(Version)
+	fmt.Println(utils.UserAgent())
 }
