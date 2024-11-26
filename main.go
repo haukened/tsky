@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/haukened/tsky/internal/auth"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/haukened/tsky/internal/config"
-	"github.com/haukened/tsky/internal/tokensvc"
 	"github.com/haukened/tsky/internal/utils"
+	"github.com/haukened/tsky/tui"
 )
 
 var Version string = "dev"
@@ -25,12 +25,9 @@ func main() {
 	dontPanic(err)
 	err = c.Load()
 	dontPanic(err)
-	err = auth.AuthUser(c)
-	dontPanic(err)
-	tsvc, err := tokensvc.NewRefresher(c.Server, c.RefreshJwt)
-	dontPanic(err)
-	c.RefreshJwt = tsvc.RefreshToken()
-	err = c.Save()
-	dontPanic(err)
-	fmt.Println(utils.UserAgent())
+	p := tea.NewProgram(tui.NewModel(c), tea.WithAltScreen())
+	if _, err := p.Run(); err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v", err)
+		os.Exit(1)
+	}
 }

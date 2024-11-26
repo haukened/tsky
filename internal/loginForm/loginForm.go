@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strings"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
 	"github.com/haukened/tsky/internal/config"
 	"github.com/haukened/tsky/internal/utils"
@@ -36,8 +37,8 @@ var disallowedTLDs = []string{
 	".test",
 }
 
-func Show(c *config.Config) (err error) {
-	form := huh.NewForm(
+func NewModel(c *config.Config) tea.Model {
+	return huh.NewForm(
 		huh.NewGroup(
 			huh.NewInput().
 				Title("Username").
@@ -50,6 +51,10 @@ func Show(c *config.Config) (err error) {
 				Validate(validatePassword),
 		),
 	)
+}
+
+func Show(c *config.Config) (err error) {
+	form := NewModel(c).(*huh.Form)
 	err = form.Run()
 	return
 }
