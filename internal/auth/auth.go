@@ -100,6 +100,7 @@ func LoginWithPassword(c *config.Config) (err error) {
 	// set the access and refresh tokens
 	c.AccessJwt = authResponse.AccessJwt
 	c.RefreshJwt = authResponse.RefreshJwt
+	c.Did = authResponse.Did
 
 	return
 }
