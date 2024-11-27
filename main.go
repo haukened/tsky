@@ -6,8 +6,8 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/haukened/tsky/internal/config"
+	"github.com/haukened/tsky/internal/tui"
 	"github.com/haukened/tsky/internal/utils"
-	"github.com/haukened/tsky/tui"
 )
 
 var Version string = "dev"
