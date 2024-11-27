@@ -1,40 +1,55 @@
 package tui
 
 import (
-	"fmt"
-
-	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"github.com/haukened/tsky/internal/config"
+	"github.com/haukened/tsky/internal/tokensvc"
+	"github.com/haukened/tsky/internal/tui/tabs"
 )
 
 type AppView struct {
-	spinner spinner.Model
+	jwt        *tokensvc.Refresher
+	tabs       map[int]tea.Model
+	currentTab int
 }
 
-func NewAppView() *AppView {
-	s := spinner.New()
-	s.Spinner = spinner.Dot
-	s.Style = lipgloss.NewStyle().Foreground(skyBlue)
-	return &AppView{
-		spinner: s,
+func NewAppView(c *config.Config) AppView {
+	// create a new token svc
+	jwt, err := tokensvc.NewRefresher(c)
+	if err != nil {
+		jwt = nil
+	}
+	return AppView{
+		jwt: jwt,
+		tabs: map[int]tea.Model{
+			0: tabs.NewProfileTab(c.Did, c.Server, jwt),
+		},
+		currentTab: 0,
 	}
 }
 
-func (a *AppView) Init() tea.Cmd {
-	return a.spinner.Tick
-}
-
-func (a *AppView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	var cmd tea.Cmd
-	switch msg := msg.(type) {
-	case spinner.TickMsg:
-		a.spinner, cmd = a.spinner.Update(msg)
-		return a, cmd
+func (a AppView) Init() tea.Cmd {
+	var cmds []tea.Cmd
+	for _, model := range a.tabs {
+		cmds = append(cmds, model.Init())
 	}
-	return a, nil
+	return tea.Batch(cmds...)
 }
 
-func (a *AppView) View() string {
-	return fmt.Sprintf("Login Successful\n%s %s", a.spinner.View(), "Loading...")
+func (a AppView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmds []tea.Cmd
+	for i, model := range a.tabs {
+		model, cmd := model.Update(msg)
+		cmds = append(cmds, cmd)
+		a.tabs[i] = model
+	}
+	return a, tea.Batch(cmds...)
+}
+
+func (a AppView) View() string {
+	t, ok := a.tabs[a.currentTab]
+	if ok {
+		return t.View()
+	}
+	return "Error"
 }

@@ -12,6 +12,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
 	"github.com/haukened/tsky/internal/config"
+	"github.com/haukened/tsky/internal/messages"
 	"github.com/haukened/tsky/internal/utils"
 )
 
@@ -37,15 +38,10 @@ var disallowedTLDs = []string{
 	".test",
 }
 
-type loginFinishedMsg bool
-
-func loginFinished() tea.Msg {
-	return loginFinishedMsg(true)
-}
-
 type LoginModel struct {
 	form *huh.Form
 	conf *config.Config
+	done bool
 }
 
 func NewFormModel(c *config.Config) tea.Model {
@@ -76,7 +72,7 @@ func (m LoginModel) Init() tea.Cmd {
 		if m.conf.RefreshJwt != "" {
 			// we have a token so we need to check if its valid
 			if !utils.IsJwtExpired(m.conf.RefreshJwt) {
-				return loginFinished
+				return messages.LoginFinished
 			} else {
 				// we have a token but its expired
 				// so delete it
@@ -89,6 +85,9 @@ func (m LoginModel) Init() tea.Cmd {
 }
 
 func (m LoginModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if m.done {
+		return m, nil
+	}
 	var cmds []tea.Cmd
 	if m.form.State != huh.StateCompleted {
 		// pass the message to the form
@@ -98,17 +97,18 @@ func (m LoginModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		cmds = append(cmds, cmd)
 		// get the form help message
-		cmd = SendHelpText(m.form.Help().ShortHelpView(m.form.KeyBinds()))
+		cmd = messages.SendHelpText(m.form.Help().ShortHelpView(m.form.KeyBinds()))
 		cmds = append(cmds, cmd)
 		// get the form errors
 		if len(m.form.Errors()) > 0 {
-			cmd = SendStatusErr(m.form.Errors()[0].Error())
+			cmd = messages.SendStatusErr(m.form.Errors()[0].Error())
 			cmds = append(cmds, cmd)
 		}
 	} else {
 		// form is completed
 		m.conf.Save()
-		cmds = append(cmds, loginFinished)
+		m.done = true
+		cmds = append(cmds, messages.LoginFinished)
 	}
 	// return the updated model and the batched commands
 	return m, tea.Batch(cmds...)

@@ -11,13 +11,14 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/haukened/tsky/internal/config"
+	"github.com/haukened/tsky/internal/messages"
 	"github.com/haukened/tsky/internal/utils"
 )
 
 type AuthModel struct {
 	c  *config.Config
 	s  spinner.Model
-	ch chan authResult
+	ch chan messages.AuthResult
 }
 
 func NewAuthModel(c *config.Config) AuthModel {
@@ -27,12 +28,12 @@ func NewAuthModel(c *config.Config) AuthModel {
 	return AuthModel{
 		s:  s,
 		c:  c,
-		ch: make(chan authResult),
+		ch: make(chan messages.AuthResult),
 	}
 }
 
 func (a AuthModel) Init() tea.Cmd {
-	go func(ch chan authResult) {
+	go func(ch chan messages.AuthResult) {
 		doAuth(a.c, ch)
 	}(a.ch)
 	return a.s.Tick
@@ -48,9 +49,9 @@ func (a AuthModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	select {
 	case result := <-a.ch:
-		cmds = append(cmds, authStatus(result.success))
-		if !result.success {
-			cmds = append(cmds, SendStatusErr(result.message))
+		cmds = append(cmds, messages.AuthStatus(result.Success))
+		if !result.Success {
+			cmds = append(cmds, messages.SendStatusErr(result.Message))
 		}
 	default:
 	}
@@ -95,25 +96,26 @@ type AuthResponse struct {
 	Active          bool   `json:"active"`
 }
 
-func doAuth(c *config.Config, ch chan authResult) {
+func doAuth(c *config.Config, ch chan messages.AuthResult) {
 	if c.Identifier != "" && c.RefreshJwt != "" {
 		if !utils.IsJwtExpired(c.RefreshJwt) {
-			ch <- authResult{true, "Already authenticated"}
+			ch <- messages.AuthResult{Success: true, Message: "Already authenticated"}
 			return
 		}
 	} else if c.Identifier == "" {
-		ch <- authResult{false, "No username provided"}
+		ch <- messages.AuthResult{Success: false, Message: "No username provided"}
 		return
 	} else if c.AppPassword == "" {
-		ch <- authResult{false, "No password provided"}
+		ch <- messages.AuthResult{Success: false, Message: "No password provided"}
 		return
 	}
 	err := loginWithPassword(c)
 	if err != nil {
-		ch <- authResult{false, err.Error()}
+		ch <- messages.AuthResult{Success: false, Message: err.Error()}
 		return
 	}
-	ch <- authResult{true, "Authenticated"}
+	c.Save()
+	ch <- messages.AuthResult{Success: true, Message: "Authenticated"}
 }
 
 func loginWithPassword(c *config.Config) (err error) {

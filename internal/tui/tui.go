@@ -1,11 +1,13 @@
 package tui
 
 import (
+	"fmt"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/haukened/tsky/internal/config"
+	"github.com/haukened/tsky/internal/messages"
 )
 
 var (
@@ -45,6 +47,7 @@ func (m Model) Init() tea.Cmd {
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmds []tea.Cmd
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -55,26 +58,21 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.w = msg.Width - 2
 		m.h = msg.Height - 2
 		return m, nil
-	case splashMsg:
+	case messages.SplashMsg:
 		m.currentModel = "login"
-		return m, nil
-	case helpMsg:
+	case messages.HelpMsg:
 		m.helpMsg = string(msg)
-		return m, nil
-	case statusMsg:
+	case messages.StatusMsg:
 		m.statusMsg = string(msg)
-		return m, nil
-	case loginFinishedMsg:
+	case messages.LoginFinishedMsg:
 		// Switch to the auth model
 		m.models["auth"] = NewAuthModel(m.conf)
 		// Init the auth model
 		cmd := m.models["auth"].Init()
 		// Set the current model to auth
 		m.currentModel = "auth"
-		// remove the login model
-		delete(m.models, "login")
-		return m, cmd
-	case authStatusMsg:
+		cmds = append(cmds, cmd)
+	case messages.AuthStatusMsg:
 		if !msg {
 			// clear the password
 			m.conf.AppPassword = ""
@@ -84,25 +82,33 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmd := m.models["login"].Init()
 			// set the current model to login
 			m.currentModel = "login"
-			// remove the auth model
-			delete(m.models, "auth")
-			return m, cmd
+			cmds = append(cmds, cmd)
+		} else {
+			// init the app view
+			m.models["app"] = NewAppView(m.conf)
+			// init the app view
+			cmd := m.models["app"].Init()
+			// set the current model to app
+			m.currentModel = "app"
+			cmds = append(cmds, cmd)
 		}
 	}
+	// Update the current model
+	current := m.models[m.currentModel]
+	current, cmd := current.Update(msg)
+	cmds = append(cmds, cmd)
+	m.models[m.currentModel] = current
 
-	// Update all models
-	var cmds []tea.Cmd
-	for i := range m.models {
-		newModel, cmd := m.models[i].Update(msg)
-		m.models[i] = newModel
-		cmds = append(cmds, cmd)
-	}
-
+	// Return the updated model and any commands
 	return m, tea.Batch(cmds...)
 }
 
 func (m Model) View() string {
-	return m.Render(m.models[m.currentModel].View())
+	current, ok := m.models[m.currentModel]
+	if !ok {
+		return fmt.Sprintf("Error: Model %s not found", m.currentModel)
+	}
+	return m.Render(current.View())
 }
 
 func (m Model) Render(s string) string {

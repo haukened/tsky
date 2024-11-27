@@ -3,34 +3,38 @@ package tui
 import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/haukened/tsky/internal/messages"
 )
 
 type splash struct {
 	countdown int
+	done      bool
 }
 
-type splashMsg struct{}
-
 func (s splash) Init() tea.Cmd {
-	return tick()
+	return messages.Tick()
 }
 
 func hideSplash() tea.Msg {
-	return splashMsg{}
+	return messages.SplashMsg{}
 }
 
 func (s splash) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+	if s.done {
+		return s, nil
+	}
 	switch message.(type) {
-	case tickMsg:
+	case messages.TickMsg:
 		if s.countdown > 0 {
 			s.countdown--
 			if s.countdown <= 0 {
+				s.done = true
 				return s, hideSplash
 			}
-			return s, tick()
+			return s, messages.Tick()
 		}
 	}
-	return s, tick()
+	return s, messages.Tick()
 }
 
 func (s splash) View() string {

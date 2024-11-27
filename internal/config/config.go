@@ -17,6 +17,7 @@ import (
 var k = koanf.New(".")
 
 type Config struct {
+	Did         string `koanf:"did" yaml:"did"`
 	Identifier  string `koanf:"identifier" yaml:"identifier"`
 	RefreshJwt  string `koanf:"refresh_jwt" yaml:"refresh_jwt"`
 	AccessJwt   string `koanf:"-" yaml:"-"` // do not marshal this field
