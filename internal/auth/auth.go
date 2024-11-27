@@ -8,18 +8,17 @@ import (
 	"net/http"
 
 	"github.com/haukened/tsky/internal/config"
-	loginform "github.com/haukened/tsky/internal/loginForm"
 	"github.com/haukened/tsky/internal/utils"
 )
 
-const URI_BASE = "https://%s/xrpc/com.atproto.server.createSession"
+const BASE_AUTH_URI = "https://%s/xrpc/com.atproto.server.createSession"
 
-type Request struct {
+type RequestBody struct {
 	Identifier string `json:"identifier"`
 	Password   string `json:"password"`
 }
 
-type Response struct {
+type AuthResponse struct {
 	Did    string `json:"did"`
 	DidDoc struct {
 		Context            []string `json:"@context"`
@@ -46,88 +45,61 @@ type Response struct {
 	Active          bool   `json:"active"`
 }
 
-func AuthUser(c *config.Config) error {
-	err := getCredentials(c)
-	if err != nil {
-		return err
-	}
-	return nil
-}
+func LoginWithPassword(c *config.Config) (err error) {
+	// Create the URL
+	postURL := fmt.Sprintf(BASE_AUTH_URI, c.Server)
 
-func passwordAuth(c *config.Config) error {
-	postUrl := fmt.Sprintf(URI_BASE, c.Server)
-	b, err := json.Marshal(Request{
+	// Create the body
+	body := RequestBody{
 		Identifier: c.Identifier,
 		Password:   c.AppPassword,
-	})
-	if err != nil {
-		return err
 	}
-	req, err := http.NewRequest(http.MethodPost, postUrl, bytes.NewBuffer(b))
+
+	// Marshal the body
+	jsonBody, err := json.Marshal(body)
 	if err != nil {
-		return err
+		return
 	}
-	req.Header.Add("Content-Type", "application/json")
+
+	// Create the request
+	req, err := http.NewRequest("POST", postURL, bytes.NewBuffer(jsonBody))
+	if err != nil {
+		return
+	}
+
+	// Set the headers
+	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("User-Agent", utils.UserAgent())
+
+	// Send the request
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return err
-	}
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed to authenticate user: %s", resp.Status)
+		return
 	}
 	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return err
+
+	if resp.StatusCode != http.StatusOK {
+		err = fmt.Errorf("failed to login, status code: %d", resp.StatusCode)
+		return
 	}
-	var response Response
-	err = json.Unmarshal(body, &response)
+
+	// read the response body
+	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return err
+		return
 	}
+
+	// Unmarshal the response
+	var authResponse AuthResponse
+	err = json.Unmarshal(bodyBytes, &authResponse)
+	if err != nil {
+		return
+	}
+
 	// set the access and refresh tokens
-	c.AccessJwt = response.AccessJwt
-	c.RefreshJwt = response.RefreshJwt
-	// clear the password
-	c.AppPassword = ""
-	return nil
-}
+	c.AccessJwt = authResponse.AccessJwt
+	c.RefreshJwt = authResponse.RefreshJwt
 
-func getCredentials(c *config.Config) error {
-	// first check if we have a valid identifier
-	if c.Identifier == "" {
-		// if we don't we know we need to prompt for credentials
-		err := doPasswordLogin(c)
-		if err != nil {
-			return err
-		}
-	}
-	// next we need to check if we have a valid refresh token
-	if c.RefreshJwt == "" {
-		// if we don't we need to prompt for credentials
-		err := doPasswordLogin(c)
-		if err != nil {
-			return err
-		}
-	} else {
-		// we need to check if the refresh token is still valid
-		if utils.IsJwtExpired(c.RefreshJwt) {
-			err := doPasswordLogin(c)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	// otherwise we can use the refreshtoken later
-	return nil
-}
-
-func doPasswordLogin(c *config.Config) error {
-	err := loginform.Show(c)
-	if err != nil {
-		return err
-	}
-	return passwordAuth(c)
+	return
 }

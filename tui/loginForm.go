@@ -1,4 +1,4 @@
-package loginform
+package tui
 
 import (
 	"errors"
@@ -37,8 +37,19 @@ var disallowedTLDs = []string{
 	".test",
 }
 
-func NewModel(c *config.Config) tea.Model {
-	return huh.NewForm(
+type authFinishedMsg bool
+
+func authFinished() tea.Msg {
+	return authFinishedMsg(true)
+}
+
+type LoginModel struct {
+	form *huh.Form
+	conf *config.Config
+}
+
+func NewFormModel(c *config.Config) tea.Model {
+	f := huh.NewForm(
 		huh.NewGroup(
 			huh.NewInput().
 				Title("Username").
@@ -50,13 +61,64 @@ func NewModel(c *config.Config) tea.Model {
 				Value(&c.AppPassword).
 				Validate(validatePassword),
 		),
-	)
+	).WithShowHelp(false).WithShowErrors(false)
+
+	return LoginModel{
+		form: f,
+		conf: c,
+	}
 }
 
-func Show(c *config.Config) (err error) {
-	form := NewModel(c).(*huh.Form)
-	err = form.Run()
-	return
+func (m LoginModel) Init() tea.Cmd {
+	// determine if we even need to show the login form
+	if m.conf.Identifier != "" {
+		// we have a username
+		if m.conf.RefreshJwt != "" {
+			// we have a token so we need to check if its valid
+			if !utils.IsJwtExpired(m.conf.RefreshJwt) {
+				return authFinished
+			} else {
+				// we have a token but its expired
+				// so delete it
+				m.conf.RefreshJwt = ""
+				m.conf.Save()
+			}
+		}
+	}
+	return m.form.Init()
+}
+
+func (m LoginModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmds []tea.Cmd
+	if m.form.State != huh.StateCompleted {
+		// pass the message to the form
+		form, cmd := m.form.Update(msg)
+		if f, ok := form.(*huh.Form); ok {
+			m.form = f
+		}
+		cmds = append(cmds, cmd)
+		// get the form help message
+		cmd = SendHelpText(m.form.Help().ShortHelpView(m.form.KeyBinds()))
+		cmds = append(cmds, cmd)
+		// get the form errors
+		if len(m.form.Errors()) > 0 {
+			cmd = SendStatusErr(m.form.Errors()[0].Error())
+			cmds = append(cmds, cmd)
+		} else {
+			cmd = ClearStatusMsg()
+			cmds = append(cmds, cmd)
+		}
+	} else {
+		// form is completed
+		m.conf.Save()
+		cmds = append(cmds, authFinished)
+	}
+	// return the updated model and the batched commands
+	return m, tea.Batch(cmds...)
+}
+
+func (m LoginModel) View() string {
+	return m.form.View()
 }
 
 func validateIdentifier(s string) error {

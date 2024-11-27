@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/haukened/tsky/internal/config"
 	"github.com/haukened/tsky/internal/utils"
 )
 
@@ -29,10 +30,10 @@ type RefreshOutput struct {
 	RefreshJwt string `json:"refreshJwt"`
 }
 
-func NewRefresher(server, refreshToken string) (*Refresher, error) {
+func NewRefresher(c *config.Config) (*Refresher, error) {
 	r := &Refresher{
-		refreshToken: refreshToken,
-		server:       server,
+		refreshToken: c.RefreshJwt,
+		server:       c.Server,
 	}
 	// refresh now
 	err := r.Refresh()

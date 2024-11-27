@@ -1,7 +1,7 @@
 package tui
 
 import (
-	"fmt"
+	"strings"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -21,21 +21,55 @@ func tick() tea.Cmd {
 	})
 }
 
+type helpMsg string
+
+func SendHelpText(msg string) tea.Cmd {
+	return func() tea.Msg {
+		return helpMsg(msg)
+	}
+}
+
+type statusMsg string
+
+func SendStatusMsg(msg string) tea.Cmd {
+	return func() tea.Msg {
+		return statusMsg(msg)
+	}
+}
+
+func SendStatusErr(msg string) tea.Cmd {
+	return func() tea.Msg {
+		return statusMsg(lipgloss.NewStyle().Foreground(lipgloss.Color("#FF007C")).Render(msg))
+	}
+}
+
+func ClearStatusMsg() tea.Cmd {
+	return func() tea.Msg {
+		return statusMsg("")
+	}
+}
+
 type Model struct {
 	conf         *config.Config
-	models       []tea.Model
-	currentModel int
+	models       map[string]tea.Model
+	currentModel string
 	h            int
 	w            int
+	statusMsg    string
+	helpMsg      string
 }
 
 func NewModel(c *config.Config) Model {
+	login := NewFormModel(c)
 	return Model{
 		conf: c,
-		models: []tea.Model{
-			splash{countdown: 30},
+		models: map[string]tea.Model{
+			"splash": splash{countdown: 2},
+			"login":  login,
 		},
-		currentModel: 0,
+		currentModel: "splash",
+		statusMsg:    "",
+		helpMsg:      "",
 	}
 }
 
@@ -59,8 +93,24 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.h = msg.Height - 2
 		return m, nil
 	case splashMsg:
-		m.currentModel++
+		m.currentModel = "login"
 		return m, nil
+	case helpMsg:
+		m.helpMsg = string(msg)
+		return m, nil
+	case statusMsg:
+		m.statusMsg = string(msg)
+		return m, nil
+	case authFinishedMsg:
+		// Switch to the auth model
+		m.models["auth"] = NewAuthModel(m.conf)
+		// Init the auth model
+		cmd := m.models["auth"].Init()
+		// Set the current model to auth
+		m.currentModel = "auth"
+		// remove the login model
+		delete(m.models, "login")
+		return m, cmd
 	}
 
 	// Update all models
@@ -75,19 +125,40 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m Model) View() string {
-	if m.currentModel == 0 {
-		return m.Render(m.models[m.currentModel].View())
-	}
-	return m.Render(fmt.Sprintf("Hey!\nDimensions: %dx%d", m.w, m.h))
+	return m.Render(m.models[m.currentModel].View())
 }
 
 func (m Model) Render(s string) string {
-	return lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(skyBlue).
-		Height(m.h).
+	doc := strings.Builder{}
+	mainContent := lipgloss.NewStyle().
+		Height(m.h-1).
 		Width(m.w).
+		Border(lipgloss.RoundedBorder()).
+		BorderBottom(false).
+		BorderForeground(skyBlue).
 		Padding(1, 2).
 		Align(lipgloss.Center, lipgloss.Center).
 		Render(s)
+	doc.WriteString(mainContent + "\n")
+	doc.WriteString(m.MkFooter())
+	return doc.String()
+}
+
+func (m Model) MkFooter() string {
+	borderStyle := lipgloss.NewStyle().Foreground(skyBlue)
+	helpStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#5e5e5e")).Bold(true)
+	statusStyle := lipgloss.NewStyle().Bold(true)
+	wS, _ := lipgloss.Size(m.statusMsg)
+	wH, _ := lipgloss.Size(m.helpMsg)
+	w := m.w - wS - wH - 7
+	sB := strings.Builder{}
+	sB.WriteString(borderStyle.Render("╰-"))
+	sB.WriteString(borderStyle.Bold(true).Render("tSky-"))
+	sB.WriteString(helpStyle.Render(m.helpMsg))
+	for i := 0; i < w; i++ {
+		sB.WriteString(borderStyle.Render("─"))
+	}
+	sB.WriteString(statusStyle.Render(m.statusMsg))
+	sB.WriteString(borderStyle.Render("-╯"))
+	return sB.String()
 }

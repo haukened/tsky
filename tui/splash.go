@@ -22,11 +22,13 @@ func hideSplash() tea.Msg {
 func (s splash) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message.(type) {
 	case tickMsg:
-		s.countdown--
-		if s.countdown <= 0 {
-			return s, hideSplash
+		if s.countdown > 0 {
+			s.countdown--
+			if s.countdown <= 0 {
+				return s, hideSplash
+			}
+			return s, tick()
 		}
-		return s, tick()
 	}
 	return s, tick()
 }
