@@ -7,6 +7,19 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+type authResult struct {
+	success bool
+	message string
+}
+
+type authStatusMsg bool
+
+func authStatus(success bool) tea.Cmd {
+	return func() tea.Msg {
+		return authStatusMsg(success)
+	}
+}
+
 type tickMsg time.Time
 
 func tick() tea.Cmd {

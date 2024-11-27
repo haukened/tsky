@@ -64,7 +64,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case statusMsg:
 		m.statusMsg = string(msg)
 		return m, nil
-	case authFinishedMsg:
+	case loginFinishedMsg:
 		// Switch to the auth model
 		m.models["auth"] = NewAuthModel(m.conf)
 		// Init the auth model
@@ -74,6 +74,20 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// remove the login model
 		delete(m.models, "login")
 		return m, cmd
+	case authStatusMsg:
+		if !msg {
+			// clear the password
+			m.conf.AppPassword = ""
+			// init a new login model
+			m.models["login"] = NewFormModel(m.conf)
+			// init the login model
+			cmd := m.models["login"].Init()
+			// set the current model to login
+			m.currentModel = "login"
+			// remove the auth model
+			delete(m.models, "auth")
+			return m, cmd
+		}
 	}
 
 	// Update all models

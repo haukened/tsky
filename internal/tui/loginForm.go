@@ -37,10 +37,10 @@ var disallowedTLDs = []string{
 	".test",
 }
 
-type authFinishedMsg bool
+type loginFinishedMsg bool
 
-func authFinished() tea.Msg {
-	return authFinishedMsg(true)
+func loginFinished() tea.Msg {
+	return loginFinishedMsg(true)
 }
 
 type LoginModel struct {
@@ -76,7 +76,7 @@ func (m LoginModel) Init() tea.Cmd {
 		if m.conf.RefreshJwt != "" {
 			// we have a token so we need to check if its valid
 			if !utils.IsJwtExpired(m.conf.RefreshJwt) {
-				return authFinished
+				return loginFinished
 			} else {
 				// we have a token but its expired
 				// so delete it
@@ -104,14 +104,11 @@ func (m LoginModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if len(m.form.Errors()) > 0 {
 			cmd = SendStatusErr(m.form.Errors()[0].Error())
 			cmds = append(cmds, cmd)
-		} else {
-			cmd = ClearStatusMsg()
-			cmds = append(cmds, cmd)
 		}
 	} else {
 		// form is completed
 		m.conf.Save()
-		cmds = append(cmds, authFinished)
+		cmds = append(cmds, loginFinished)
 	}
 	// return the updated model and the batched commands
 	return m, tea.Batch(cmds...)
