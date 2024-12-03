@@ -38,7 +38,7 @@ func main() {
 		log.SetFlags(log.LstdFlags | log.Lshortfile)
 		log.Println("Starting tsky")
 	}
-	p := tea.NewProgram(tui.NewModel(c), tea.WithAltScreen())
+	p := tea.NewProgram(tui.NewModel(c), tea.WithAltScreen(), tea.WithMouseCellMotion())
 	if _, err := p.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v", err)
 		os.Exit(1)

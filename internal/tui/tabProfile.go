@@ -1,9 +1,11 @@
 package tui
 
 import (
+	"encoding/json"
 	"fmt"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/haukened/tsky/internal/debug"
 	"github.com/haukened/tsky/internal/messages"
 	"github.com/haukened/tsky/internal/tokensvc"
 	"github.com/haukened/tsky/internal/utils"
@@ -56,6 +58,7 @@ func (p ProfileTab) Init() tea.Cmd {
 		msg.LoadingError = true
 		msg.Error = err
 	}
+	debug.Debugf(prettyPrintProfile(msg))
 	return messages.SendProfileMsg(msg)
 }
 
@@ -76,4 +79,9 @@ func (p ProfileTab) View() string {
 		return fmt.Sprintf("Error: %s contacting %s", p.Profile.Error, p.Server())
 	}
 	return fmt.Sprintf("%+v", p)
+}
+
+func prettyPrintProfile(p messages.ProfileMessage) string {
+	pretty, _ := json.MarshalIndent(p, "", "  ")
+	return fmt.Sprintf("%s\n", pretty)
 }

@@ -41,13 +41,8 @@ func NewModel(c *config.Config) Model {
 }
 
 func (m Model) Init() tea.Cmd {
-	// initialize all the models
-	var cmds []tea.Cmd
-	for _, model := range m.models {
-		cmd := model.Init()
-		cmds = append(cmds, cmd)
-	}
-	return tea.Batch(cmds...)
+	// initialize the first model
+	return m.models[m.currentModel].Init()
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
