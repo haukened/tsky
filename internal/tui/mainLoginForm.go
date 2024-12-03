@@ -12,18 +12,26 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
 	"github.com/haukened/tsky/internal/config"
+	"github.com/haukened/tsky/internal/debug"
 	"github.com/haukened/tsky/internal/messages"
 	"github.com/haukened/tsky/internal/utils"
 )
 
 var (
-	ErrHandleDoesNotResolve = errors.New("handle does not resolve")
-	ErrInvalidHandle        = errors.New("invalid handle")
-	ErrPasswordEmpty        = errors.New("password cannot be empty")
-	ErrInvalidPassword      = errors.New("invalid password, please use an app password not your primary account password")
-	ErrEmailDomainNotExist  = errors.New("email domain does not exist")
-	ErrDisallowedTLD        = errors.New("disallowed TLD")
-	ErrHttpClient           = errors.New("http client error")
+	//lint:ignore ST1005 I want it that way
+	ErrHandleDoesNotResolve = errors.New("Handle does not resolve")
+	//lint:ignore ST1005 I want it that way
+	ErrInvalidHandle = errors.New("Invalid handle")
+	//lint:ignore ST1005 I want it that way
+	ErrPasswordEmpty = errors.New("Password cannot be empty")
+	//lint:ignore ST1005 I want it that way
+	ErrInvalidPassword = errors.New("Invalid password, please use an app password not your primary account password")
+	//lint:ignore ST1005 I want it that way
+	ErrEmailDomainNotExist = errors.New("Email domain does not exist")
+	//lint:ignore ST1005 I want it that way
+	ErrDisallowedTLD = errors.New("Disallowed TLD")
+	// but this one is somehow fine?
+	ErrHttpClient = errors.New("HTTP client error")
 )
 
 var disallowedTLDs = []string{
@@ -41,11 +49,11 @@ var disallowedTLDs = []string{
 type LoginModel struct {
 	form *huh.Form
 	conf *config.Config
-	done bool
+	show bool
 }
 
-func NewFormModel(c *config.Config) tea.Model {
-	f := huh.NewForm(
+func initialForm(c *config.Config) *huh.Form {
+	return huh.NewForm(
 		huh.NewGroup(
 			huh.NewInput().
 				Title("Username").
@@ -58,37 +66,35 @@ func NewFormModel(c *config.Config) tea.Model {
 				Validate(validatePassword),
 		),
 	).WithShowHelp(false).WithShowErrors(false)
+}
 
+func NewLoginModel(c *config.Config) NamedModel {
+	f := initialForm(c)
 	return LoginModel{
 		form: f,
 		conf: c,
+		show: false,
 	}
+}
+
+func (m LoginModel) Name() string {
+	return "login"
 }
 
 func (m LoginModel) Init() tea.Cmd {
-	// determine if we even need to show the login form
-	if m.conf.Identifier != "" {
-		// we have a username
-		if m.conf.RefreshJwt != "" {
-			// we have a token so we need to check if its valid
-			if !utils.IsJwtExpired(m.conf.RefreshJwt) {
-				return messages.LoginFinished
-			} else {
-				// we have a token but its expired
-				// so delete it
-				m.conf.RefreshJwt = ""
-				m.conf.Save()
-			}
-		}
-	}
 	return m.form.Init()
 }
 
-func (m LoginModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	if m.done {
-		return m, nil
-	}
+func (m LoginModel) Update(msg tea.Msg) (NamedModel, tea.Cmd) {
 	var cmds []tea.Cmd
+	if !authNeeded(m.conf) {
+		debug.Debugf("No auth needed, skipping login")
+		cmds = append(cmds, messages.Next)
+		cmds = append(cmds, messages.StartAuth)
+		return m, tea.Batch(cmds...)
+	} else {
+		m.show = true
+	}
 	if m.form.State != huh.StateCompleted {
 		// pass the message to the form
 		form, cmd := m.form.Update(msg)
@@ -101,21 +107,45 @@ func (m LoginModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, cmd)
 		// get the form errors
 		if len(m.form.Errors()) > 0 {
-			cmd = messages.SendStatusErr(m.form.Errors()[0].Error())
+			cmd = messages.SendErrorMsg(m.form.Errors()[0].Error())
+			cmds = append(cmds, cmd)
+		} else {
+			cmd = messages.ClearStatusMsg()
 			cmds = append(cmds, cmd)
 		}
 	} else {
 		// form is completed
 		m.conf.Save()
-		m.done = true
-		cmds = append(cmds, messages.LoginFinished)
+		cmds = append(cmds, messages.Next)
+		cmds = append(cmds, messages.StartAuth)
 	}
 	// return the updated model and the batched commands
 	return m, tea.Batch(cmds...)
 }
 
 func (m LoginModel) View() string {
-	return m.form.View()
+	if m.show {
+		return m.form.View()
+	}
+	return ""
+}
+
+func authNeeded(c *config.Config) bool {
+	if c.Identifier == "" {
+		// if we don't have a username we need to auth
+		return true
+	}
+	if c.RefreshJwt == "" {
+		// if we don't have a refresh token we need to auth
+		return true
+	} else {
+		// if the refresh token is expired we need to auth
+		if utils.IsJwtExpired(c.RefreshJwt) {
+			return true
+		}
+	}
+	// if we have both a username and a valid refresh token we don't need to auth
+	return false
 }
 
 func validateIdentifier(s string) error {

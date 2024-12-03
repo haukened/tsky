@@ -7,20 +7,23 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-type AuthResult struct {
-	Success bool
-	Message string
+type NextMsg struct{}
+
+func Next() tea.Msg {
+	return NextMsg{}
 }
 
-type AuthStatusMsg bool
+type PrevMsg struct{}
 
-func AuthStatus(success bool) tea.Cmd {
-	return func() tea.Msg {
-		return AuthStatusMsg(success)
-	}
+func Prev() tea.Msg {
+	return PrevMsg{}
 }
 
-type SplashMsg struct{}
+type StartAuthMsg struct{}
+
+func StartAuth() tea.Msg {
+	return StartAuthMsg{}
+}
 
 type TickMsg time.Time
 
@@ -36,12 +39,6 @@ func SendHelpText(msg string) tea.Cmd {
 	return func() tea.Msg {
 		return HelpMsg(msg)
 	}
-}
-
-type LoginFinishedMsg bool
-
-func LoginFinished() tea.Msg {
-	return LoginFinishedMsg(true)
 }
 
 type ProfileMessage struct {
@@ -107,9 +104,9 @@ func SendStatusMsg(msg string) tea.Cmd {
 	}
 }
 
-func SendStatusErr(msg string) tea.Cmd {
+func SendErrorMsg(msg string) tea.Cmd {
 	return func() tea.Msg {
-		return StatusMsg(lipgloss.NewStyle().Foreground(lipgloss.Color("#FF007C")).Render(msg))
+		return StatusMsg(lipgloss.NewStyle().Foreground(lipgloss.Color("#FF0000")).Render(msg))
 	}
 }
 

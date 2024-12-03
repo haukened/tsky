@@ -8,7 +8,14 @@ require (
 	github.com/knadh/koanf/providers/env v1.0.0
 	github.com/knadh/koanf/providers/file v1.1.2
 	github.com/knadh/koanf/v2 v2.1.2
+	github.com/muesli/gamut v0.3.1
 	gopkg.in/yaml.v2 v2.4.0
+)
+
+require (
+	github.com/muesli/clusters v0.0.0-20200529215643-2700303c1762 // indirect
+	github.com/muesli/kmeans v0.3.1 // indirect
+	github.com/xrash/smetrics v0.0.0-20240521201337-686a1a2994c1 // indirect
 )
 
 require (
@@ -17,16 +24,16 @@ require (
 	github.com/bluesky-social/indigo v0.0.0-20241122170530-feceb364ee49 // indirect
 	github.com/carlmjohnson/versioninfo v0.22.5 // indirect
 	github.com/catppuccin/go v0.2.0 // indirect
-	github.com/charmbracelet/bubbles v0.20.0 // indirect
-	github.com/charmbracelet/bubbletea v1.2.4 // indirect
-	github.com/charmbracelet/lipgloss v1.0.0 // indirect
-	github.com/charmbracelet/x/ansi v0.4.5 // indirect
-	github.com/charmbracelet/x/exp/strings v0.0.0-20240722160745-212f7b056ed0 // indirect
+	github.com/charmbracelet/bubbles v0.20.0
+	github.com/charmbracelet/bubbletea v1.2.4
+	github.com/charmbracelet/lipgloss v1.0.0
+	github.com/charmbracelet/x/ansi v0.5.2 // indirect
+	github.com/charmbracelet/x/exp/strings v0.0.0-20241122161412-4559bf4d941d // indirect
 	github.com/charmbracelet/x/term v0.2.1 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
-	github.com/fsnotify/fsnotify v1.7.0 // indirect
+	github.com/fsnotify/fsnotify v1.8.0 // indirect
 	github.com/go-logr/logr v1.4.1 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
@@ -84,7 +91,7 @@ require (
 	golang.org/x/crypto v0.21.0 // indirect
 	golang.org/x/sync v0.9.0 // indirect
 	golang.org/x/sys v0.27.0 // indirect
-	golang.org/x/text v0.18.0 // indirect
+	golang.org/x/text v0.20.0 // indirect
 	golang.org/x/xerrors v0.0.0-20231012003039-104605ab7028 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	lukechampine.com/blake3 v1.2.1 // indirect

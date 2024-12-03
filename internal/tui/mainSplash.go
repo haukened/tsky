@@ -11,15 +11,19 @@ type splash struct {
 	done      bool
 }
 
+func NewSplashModel(seconds int) splash {
+	return splash{countdown: seconds}
+}
+
+func (s splash) Name() string {
+	return "splash"
+}
+
 func (s splash) Init() tea.Cmd {
 	return messages.Tick()
 }
 
-func hideSplash() tea.Msg {
-	return messages.SplashMsg{}
-}
-
-func (s splash) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+func (s splash) Update(message tea.Msg) (NamedModel, tea.Cmd) {
 	if s.done {
 		return s, nil
 	}
@@ -27,14 +31,12 @@ func (s splash) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	case messages.TickMsg:
 		if s.countdown > 0 {
 			s.countdown--
-			if s.countdown <= 0 {
-				s.done = true
-				return s, hideSplash
-			}
 			return s, messages.Tick()
 		}
+		s.done = true
+		return s, messages.Next
 	}
-	return s, messages.Tick()
+	return s, nil
 }
 
 func (s splash) View() string {

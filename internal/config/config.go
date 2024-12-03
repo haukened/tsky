@@ -24,6 +24,7 @@ type Config struct {
 	AppPassword string `koanf:"-" yaml:"-"` // do not marshal this field
 	Path        string `koanf:"-" yaml:"-"` // do not marshal this field
 	Server      string `koanf:"server,omitempty" yaml:"server,omitempty"`
+	Debug       bool   `koanf:"debug,omitempty" yaml:"debug,omitempty"`
 }
 
 func New(path string) (*Config, error) {

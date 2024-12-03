@@ -1,4 +1,4 @@
-package tabs
+package tui
 
 import (
 	"fmt"
@@ -16,6 +16,7 @@ var (
 )
 
 type ProfileTab struct {
+	name     string
 	loaded   bool
 	Profile  messages.ProfileMessage
 	Did      string
@@ -24,12 +25,17 @@ type ProfileTab struct {
 	TabIndex int
 }
 
+func (p ProfileTab) Name() string {
+	return p.name
+}
+
 func (p ProfileTab) Server() string {
 	return fmt.Sprintf(PROFILE_URI_BASE, p.server, p.Did)
 }
 
 func NewProfileTab(did, server string, jwt *tokensvc.Refresher) ProfileTab {
 	return ProfileTab{
+		name:     "Profile",
 		Did:      did,
 		server:   server,
 		jwt:      jwt,
@@ -53,7 +59,7 @@ func (p ProfileTab) Init() tea.Cmd {
 	return messages.SendProfileMsg(msg)
 }
 
-func (p ProfileTab) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (p ProfileTab) Update(msg tea.Msg) (NamedModel, tea.Cmd) {
 	switch msg := msg.(type) {
 	case messages.ProfileMessage:
 		p.loaded = true
